@@ -33,12 +33,21 @@ export default function CourseDetailScreen() {
   const [aiInsights, setAiInsights] = useState<any>(null);
   const [aiLoading, setAiLoading] = useState(false);
 
-  const handleEnroll = async () => {
-    await toggleEnroll(String(course.id));
-    if (!isEnrolled) {
-      Alert.alert('Enrolled! 🎉', `You are now enrolled in "${course.title}"`);
-    }
-  };
+const handleEnroll = () => {
+  if (isEnrolled) {
+    return;
+  }
+
+  router.push({
+    pathname: '/payment/[id]',
+    params: {
+      id: String(course.id),
+      title: course.title,
+      price: String(course.price),
+      thumbnail: course.thumbnail,
+    },
+  });
+};
 
   const loadAIInsights = async () => {
     setAiLoading(true);
@@ -140,16 +149,17 @@ export default function CourseDetailScreen() {
         </View>
 
         <View className="flex-row gap-3 mb-3">
-          <TouchableOpacity
-            className={`flex-1 rounded-[10px] py-3.5 items-center ${
-              isEnrolled ? 'bg-success' : 'bg-primary'
-            }`}
-            onPress={handleEnroll}
-          >
-            <Text className="text-white text-base font-bold">
-              {isEnrolled ? '✓ Enrolled' : 'Enroll Now'}
-            </Text>
-          </TouchableOpacity>
+<TouchableOpacity
+  className={`flex-1 rounded-[10px] py-3.5 items-center ${
+    isEnrolled ? 'bg-success' : 'bg-primary'
+  }`}
+  onPress={handleEnroll}
+  disabled={isEnrolled}
+>
+  <Text className="text-white text-base font-bold">
+    {isEnrolled ? '✓ Enrolled' : 'Enroll Now'}
+  </Text>
+</TouchableOpacity>
 
           <TouchableOpacity
             className="w-[50px] bg-primary-light rounded-[10px] justify-center items-center"

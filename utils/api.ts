@@ -1,12 +1,26 @@
 import * as SecureStore from 'expo-secure-store';
 import { BASE_URL, ENDPOINTS, REQUEST_TIMEOUT } from '../constants/api';
+import { Platform } from 'react-native';
+
+async function getAuthToken() {
+  if (Platform.OS === 'web') {
+    return localStorage.getItem('auth_token');
+  }
+
+  return SecureStore.getItemAsync('auth_token');
+}
 
 async function request<T>(
   url: string,
   options: RequestInit = {},
   retries = 2
 ): Promise<T> {
-  const token = await SecureStore.getItemAsync('auth_token');
+  //console.log('API REQUEST START:', url);
+
+  const token = await getAuthToken();
+
+  //console.log('AUTH TOKEN CHECK COMPLETE');
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
@@ -14,28 +28,50 @@ async function request<T>(
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
   };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
 
   try {
+    //console.log('FETCH START:', url);
+
     const res = await fetch(url, {
       ...options,
       headers,
       signal: controller.signal,
     });
+
+    //console.log('FETCH RESPONSE:', res.status);
+
     clearTimeout(timer);
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err?.message || `HTTP ${res.status}`);
     }
-    return res.json() as Promise<T>;
+
+    const result = await res.json();
+
+    //console.log('FETCH DATA:', result);
+
+    return result as T;
   } catch (error: unknown) {
     clearTimeout(timer);
-    const isAbort = error instanceof Error && error.name === 'AbortError';
+
+    //console.log('API ERROR:', error);
+
+    const isAbort =
+      error instanceof Error && error.name === 'AbortError';
+
     if (retries > 0 && !isAbort) {
+      //console.log('RETRYING REQUEST...', retries);
+
       await new Promise((r) => setTimeout(r, 1000));
+
       return request<T>(url, options, retries - 1);
     }
+
     throw isAbort ? new Error('Request timed out') : error;
   }
 }
@@ -52,7 +88,18 @@ export async function registerUser(data: {
   email: string;
   password: string;
 }) {
-  return api.post(ENDPOINTS.REGISTER, data);
+  //console.log('REGISTER CLICKED');
+  //console.log('REGISTER URL:', ENDPOINTS.REGISTER);
+  // console.log('REGISTER DATA:', {
+  //   username: data.username,
+  //   email: data.email,
+  // });
+
+  const result = await api.post(ENDPOINTS.REGISTER, data);
+
+  //console.log('REGISTER RESPONSE:', result);
+
+  return result;
 }
 
 export async function loginUser(data: { email: string; password: string }) {

@@ -1,8 +1,21 @@
 import React, { useState } from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
-import { WebView, WebViewMessageEvent } from 'react-native-webview';
+
+import {
+  View,
+  Text,
+  ActivityIndicator,
+  Platform,
+} from 'react-native';
+
+import {
+  WebView,
+  WebViewMessageEvent,
+} from 'react-native-webview';
+
 import { useAuth } from '../store/authStore';
+
 import { useLocalSearchParams } from 'expo-router';
+
 import { Colors } from '../constants/colors';
 
 export default function CourseWebViewScreen() {
@@ -50,6 +63,38 @@ export default function CourseWebViewScreen() {
     );
   }
 
+  // WEB
+  if (Platform.OS === 'web') {
+    return (
+      <View className="flex-1 bg-background">
+        {React.createElement('iframe', {
+          src: courseUrl,
+          title: params.title || 'Course Content',
+          onLoad: () => setLoading(false),
+          onError: () => {
+            setLoading(false);
+            setError(true);
+          },
+          style: {
+            width: '100%',
+            height: '100%',
+            border: 'none',
+          },
+        })}
+
+        {loading && (
+          <View className="absolute inset-0 justify-center items-center bg-background/80">
+            <ActivityIndicator
+              size="large"
+              color={Colors.primary}
+            />
+          </View>
+        )}
+      </View>
+    );
+  }
+
+  // ANDROID / IOS
   return (
     <View className="flex-1">
       <WebView
@@ -72,9 +117,13 @@ export default function CourseWebViewScreen() {
           setError(true);
         }}
       />
+
       {loading && (
         <View className="absolute inset-0 justify-center items-center bg-background/80">
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator
+            size="large"
+            color={Colors.primary}
+          />
         </View>
       )}
     </View>

@@ -5,37 +5,66 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useAuth } from '../../store/authStore';
+import { useRouter } from 'expo-router';
 import { useCourses } from '../../store/courseStore';
 import { logoutUser } from '../../utils/api';
 import * as ImagePicker from 'expo-image-picker';
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const { user, logout } = useAuth();
   const { bookmarks, enrolled } = useCourses();
   const [avatarUrl, setAvatarUrl] = React.useState(
      'https://picsum.photos/200/300'
   );
 
-  const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', style: 'cancel' },
+const performLogout = async () => {
+  try {
+    await logoutUser();
+  } catch {
+    // Ignore server logout errors.
+    // Local logout must still happen.
+  }
+
+  await logout();
+  router.replace('/(auth)/login');
+};
+
+const handleLogout = () => {
+  if (Platform.OS === 'web') {
+    const confirmed = window.confirm(
+      'Are you sure you want to logout?'
+    );
+
+    if (confirmed) {
+      void performLogout();
+    }
+
+    return;
+  }
+
+  Alert.alert(
+    'Logout',
+    'Are you sure you want to logout?',
+    [
+      {
+        text: 'Cancel',
+        style: 'cancel',
+      },
       {
         text: 'Logout',
         style: 'destructive',
-        onPress: async () => {
-          try {
-            await logoutUser();
-          } catch {
-            // ignore network errors on logout
-          }
-          await logout();
+        onPress: () => {
+          void performLogout();
         },
       },
-    ]);
-  };
+    ]
+  );
+};
 
   //user avatar image is page not found so added image intensionally
 

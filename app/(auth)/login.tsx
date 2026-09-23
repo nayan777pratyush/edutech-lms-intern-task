@@ -18,8 +18,16 @@ import { loginUser } from '../../utils/api';
 import { useAuth } from '../../store/authStore';
 
 const schema = z.object({
-  email: z.string().email('Invalid email'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  email: z
+    .string()
+    .trim()
+    .min(1, 'Email is required')
+    .email('Please enter a valid email address'),
+
+  password: z
+    .string()
+    .min(1, 'Password is required')
+    .min(6, 'Password must be at least 6 characters'),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -28,25 +36,55 @@ export default function LoginScreen() {
   const { login } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const {
-    control,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<FormData>({ resolver: zodResolver(schema) });
+const {
+  control,
+  handleSubmit,
+  formState: { errors },
+} = useForm<FormData>({
+  resolver: zodResolver(schema),
+  defaultValues: {
+    email: '',
+    password: '',
+  },
+});
 
-  const onSubmit = async (data: FormData) => {
-    setIsSubmitting(true);
-    try {
-      const res = await loginUser(data) as { data: { accessToken: string; user: object, refreshToken: string } };
-      await login(res.data.accessToken, res.data.user as Parameters<typeof login>[1], res.data.refreshToken as Parameters<typeof login>[2]);
-    } catch (err: unknown) {
-      console.log(err);
-      const msg = err instanceof Error ? err.message : 'Login failed';
-      Alert.alert('Login Failed', msg);
-    } finally {
-      setIsSubmitting(false);
+const onSubmit = async (data: FormData) => {
+  setIsSubmitting(true);
+
+  try {
+    const res = await loginUser({
+      email: data.email.trim().toLowerCase(),
+      password: data.password,
+    }) as {
+      data: {
+        accessToken: string;
+        user: object;
+        refreshToken: string;
+      };
+    };
+
+    await login(
+      res.data.accessToken,
+      res.data.user as Parameters<typeof login>[1],
+      res.data.refreshToken as Parameters<typeof login>[2]
+    );
+  } catch (err: unknown) {
+    console.error('Login failed:', err);
+
+    const message =
+      err instanceof Error
+        ? err.message
+        : 'Login failed. Please check your credentials.';
+
+    if (Platform.OS === 'web') {
+      window.alert(`Login Failed\n\n${message}`);
+    } else {
+      Alert.alert('Login Failed', message);
     }
-  };
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
       <KeyboardAvoidingView

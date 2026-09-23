@@ -14,25 +14,42 @@ export interface Course {
   instructorAvatar?: string;
 }
 
-const BOOKMARKS_KEY = 'bookmarked_courses';
-const ENROLLED_KEY = 'enrolled_courses';
+function getBookmarksKey(userId: string) {
+  return `bookmarked_courses_${userId}`;
+}
 
-export async function loadBookmarks(): Promise<string[]> {
-  const data = await AsyncStorage.getItem(BOOKMARKS_KEY);
+function getEnrolledKey(userId: string) {
+  return `enrolled_courses_${userId}`;
+}
+
+export async function loadBookmarks(userId: string): Promise<string[]> {
+  const data = await AsyncStorage.getItem(getBookmarksKey(userId));
   return data ? JSON.parse(data) : [];
 }
 
-export async function saveBookmarks(ids: string[]): Promise<void> {
-  await AsyncStorage.setItem(BOOKMARKS_KEY, JSON.stringify(ids));
+export async function saveBookmarks(
+  userId: string,
+  ids: string[]
+): Promise<void> {
+  await AsyncStorage.setItem(
+    getBookmarksKey(userId),
+    JSON.stringify(ids)
+  );
 }
 
-export async function loadEnrolled(): Promise<string[]> {
-  const data = await AsyncStorage.getItem(ENROLLED_KEY);
+export async function loadEnrolled(userId: string): Promise<string[]> {
+  const data = await AsyncStorage.getItem(getEnrolledKey(userId));
   return data ? JSON.parse(data) : [];
 }
 
-export async function saveEnrolled(ids: string[]): Promise<void> {
-  await AsyncStorage.setItem(ENROLLED_KEY, JSON.stringify(ids));
+export async function saveEnrolled(
+  userId: string,
+  ids: string[]
+): Promise<void> {
+  await AsyncStorage.setItem(
+    getEnrolledKey(userId),
+    JSON.stringify(ids)
+  );
 }
 
 export interface CourseContextType {

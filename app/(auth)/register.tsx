@@ -18,10 +18,24 @@ import { registerUser } from '../../utils/api';
 
 const schema = z
   .object({
-    username: z.string().min(3, 'Username must be at least 3 characters'),
-    email: z.string().email('Invalid email'),
-    password: z.string().min(6, 'Password must be at least 6 characters'),
-    confirm: z.string(),
+    username: z
+      .string()
+      .trim()
+      .min(1, 'Username is required')
+      .min(3, 'Username must be at least 3 characters'),
+
+    email: z
+      .string()
+      .trim()
+      .min(1, 'Email is required')
+      .email('Please enter a valid email address'),
+
+    password: z
+      .string()
+      .min(1, 'Password is required')
+      .min(6, 'Password must be at least 6 characters'),
+
+    confirm: z.string().min(1, 'Please confirm your password'),
   })
   .refine((d) => d.password === d.confirm, {
     message: 'Passwords do not match',
@@ -34,26 +48,66 @@ export default function RegisterScreen() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const {
-    control,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<FormData>({ resolver: zodResolver(schema) });
+const {
+  control,
+  handleSubmit,
+  formState: { errors },
+} = useForm<FormData>({
+  resolver: zodResolver(schema),
+  defaultValues: {
+    username: '',
+    email: '',
+    password: '',
+    confirm: '',
+  },
+});
 
-  const onSubmit = async (data: FormData) => {
-    setIsSubmitting(true);
-    try {
-      await registerUser({ username: data.username, email: data.email, password: data.password });
-      Alert.alert('Success', 'Account created! Please log in.', [
-        { text: 'OK', onPress: () => router.replace('/(auth)/login') },
-      ]);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Registration failed';
-      Alert.alert('Error', msg);
-    } finally {
-      setIsSubmitting(false);
+const onSubmit = async (data: FormData) => {
+  setIsSubmitting(true);
+
+  try {
+    await registerUser({
+      username: data.username.trim(),
+      email: data.email.trim().toLowerCase(),
+      password: data.password,
+    });
+
+    if (Platform.OS === 'web') {
+      window.alert(
+        'Registration Successful 🎉\n\n' +
+        'Your account has been created successfully. Please sign in.'
+      );
+
+      router.replace('/(auth)/login');
+    } else {
+      Alert.alert(
+        'Registration Successful 🎉',
+        'Your account has been created successfully. Please sign in.',
+        [
+          {
+            text: 'OK',
+            onPress: () => router.replace('/(auth)/login'),
+          },
+        ]
+      );
     }
-  };
+  } catch (err: unknown) {
+    console.error('Registration failed:', err);
+
+    const message =
+      err instanceof Error
+        ? err.message
+        : 'Registration failed. Please try again.';
+
+    if (Platform.OS === 'web') {
+      window.alert(`Registration Failed\n\n${message}`);
+    } else {
+      Alert.alert('Registration Failed', message);
+    }
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
        <KeyboardAvoidingView

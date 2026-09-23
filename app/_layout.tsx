@@ -39,9 +39,21 @@ function RootNavigator() {
         options={{ headerShown: true, title: 'Course Details', headerTintColor: Colors.primary }}
       />
       <Stack.Screen
+        name="payment/[id]"
+        options={{
+          headerShown: true,
+          title: 'Checkout',
+          headerTintColor: Colors.primary,
+        }}
+      />
+      <Stack.Screen
         name="webview"
         redirect={!token}
-        options={{ headerShown: true, title: 'Course Content', headerTintColor: Colors.primary }}
+        options={{ 
+          headerShown: true, 
+          title: 'Course Content', 
+          headerTintColor: Colors.primary 
+        }}
       />
     </Stack>
   );
