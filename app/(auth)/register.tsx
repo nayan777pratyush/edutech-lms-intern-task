@@ -67,7 +67,7 @@ const onSubmit = async (data: FormData) => {
 
   try {
     await registerUser({
-      username: data.username.trim(),
+      username: data.username.trim().toLowerCase(),
       email: data.email.trim().toLowerCase(),
       password: data.password,
     });

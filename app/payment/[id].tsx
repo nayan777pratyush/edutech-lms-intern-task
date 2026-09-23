@@ -48,11 +48,10 @@ const handlePaymentSuccess = () => {
     window.alert(`Payment Successful 🎉\n\n${message}`);
 
     router.replace({
-      pathname: '/webview',
+      pathname: '/learning/[id]',
       params: {
-        title,
-        price,
-        thumbnail: thumbnail || '',
+        id: String(id),
+        title: title || '',
       },
     });
 
@@ -67,11 +66,10 @@ const handlePaymentSuccess = () => {
         text: 'Start Learning',
         onPress: () => {
           router.replace({
-            pathname: '/webview',
+            pathname: '/learning/[id]',
             params: {
-              title,
-              price,
-              thumbnail: thumbnail || '',
+              id: String(id),
+              title: title || '',
             },
           });
         },

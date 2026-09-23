@@ -47,6 +47,15 @@ function RootNavigator() {
         }}
       />
       <Stack.Screen
+        name="learning/[id]"
+        redirect={!token}
+        options={{
+          headerShown: true,
+          title: 'Learning Hub',
+          headerTintColor: Colors.primary,
+        }}
+      />
+      <Stack.Screen
         name="webview"
         redirect={!token}
         options={{ 

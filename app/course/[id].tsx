@@ -179,6 +179,7 @@ const handleEnroll = () => {
             router.push({
               pathname: '/webview',
               params: {
+                id: String(course.id),
                 title: course.title,
                 instructor: course.instructorName,
                 price: String(course.price),

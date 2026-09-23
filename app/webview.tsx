@@ -1,32 +1,35 @@
 import React, { useState } from 'react';
-
 import {
   View,
   Text,
   ActivityIndicator,
   Platform,
+  TouchableOpacity,
 } from 'react-native';
-
 import {
   WebView,
   WebViewMessageEvent,
 } from 'react-native-webview';
-
 import { useAuth } from '../store/authStore';
-
-import { useLocalSearchParams } from 'expo-router';
-
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useCourses } from '../store/courseStore';
 import { Colors } from '../constants/colors';
 
 export default function CourseWebViewScreen() {
+  const router = useRouter();
   const { user, token } = useAuth();
+  const { enrolled } = useCourses();
 
   const params = useLocalSearchParams<{
+    id: string;
     title: string;
     instructor: string;
     price: string;
     description: string;
   }>();
+
+  const courseId = String(params.id || '');
+  const isEnrolled = enrolled.includes(courseId);
 
   const courseUrl = `https://rutikakhedkar.github.io/webview/?course=${encodeURIComponent(
     params.title || ''
@@ -64,9 +67,10 @@ export default function CourseWebViewScreen() {
   }
 
   // WEB
-  if (Platform.OS === 'web') {
-    return (
-      <View className="flex-1 bg-background">
+if (Platform.OS === 'web') {
+  return (
+    <View className="flex-1 bg-background">
+      <View className="flex-1">
         {React.createElement('iframe', {
           src: courseUrl,
           title: params.title || 'Course Content',
@@ -91,11 +95,46 @@ export default function CourseWebViewScreen() {
           </View>
         )}
       </View>
-    );
-  }
+
+      {isEnrolled && (
+        <View className="p-4 bg-surface border-t border-border">
+          <Text className="text-xs text-muted text-center mb-2">
+            You are enrolled in this course
+          </Text>
+
+          <button
+            onClick={() =>
+              router.push({
+                pathname: '/learning/[id]',
+                params: {
+                  id: courseId,
+                  title: params.title || '',
+                },
+              })
+            }
+            style={{
+              width: '100%',
+              padding: '14px 20px',
+              border: 'none',
+              borderRadius: 12,
+              backgroundColor: Colors.primary,
+              color: '#FFFFFF',
+              fontSize: 16,
+              fontWeight: '700',
+              cursor: 'pointer',
+            }}
+          >
+            Start Learning
+          </button>
+        </View>
+      )}
+    </View>
+  );
+}
 
   // ANDROID / IOS
-  return (
+return (
+  <View className="flex-1 bg-background">
     <View className="flex-1">
       <WebView
         source={{
@@ -127,5 +166,31 @@ export default function CourseWebViewScreen() {
         </View>
       )}
     </View>
-  );
+
+    {isEnrolled && (
+      <View className="p-4 bg-surface border-t border-border">
+        <Text className="text-xs text-muted text-center mb-2">
+          You are enrolled in this course
+        </Text>
+
+        <TouchableOpacity
+          className="bg-primary rounded-xl py-4 items-center"
+          onPress={() =>
+            router.push({
+              pathname: '/learning/[id]',
+              params: {
+                id: courseId,
+                title: params.title || '',
+              },
+            })
+          }
+        >
+          <Text className="text-white font-bold text-base">
+            Start Learning
+          </Text>
+        </TouchableOpacity>
+      </View>
+    )}
+  </View>
+);
 }
