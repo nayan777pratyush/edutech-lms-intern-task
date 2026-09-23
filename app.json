@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "EduTech LMS",
+    "slug": "edutech-lms",
+    "version": "1.0.0",
+    "orientation": "default",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "edutech",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.edutech.lms"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#2563EB",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png"
+      },
+         "android": {
+        "softwareKeyboardLayoutMode": "resize"
+      },
+      "package": "com.edutech.lms"
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#2563EB"
+        }
+      ],
+      "expo-image"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "cea55c86-21a6-4ad0-8cdb-8830e4e25b6c"
+      }
+    }
+  }
+}
