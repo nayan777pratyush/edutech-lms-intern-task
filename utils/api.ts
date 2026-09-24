@@ -1,8 +1,12 @@
 import * as SecureStore from 'expo-secure-store';
-import { BASE_URL, ENDPOINTS, REQUEST_TIMEOUT } from '../constants/api';
 import { Platform } from 'react-native';
 
-async function getAuthToken() {
+import {
+  ENDPOINTS,
+  REQUEST_TIMEOUT,
+} from '../constants/api';
+
+async function getAuthToken(): Promise<string | null> {
   if (Platform.OS === 'web') {
     return localStorage.getItem('auth_token');
   }
@@ -12,17 +16,15 @@ async function getAuthToken() {
 
 async function request<T>(
   url: string,
-  options: RequestInit = {},
-  retries = 2
+  options: RequestInit = {}
 ): Promise<T> {
-  //console.log('API REQUEST START:', url);
-
   const token = await getAuthToken();
 
-  //console.log('AUTH TOKEN CHECK COMPLETE');
-
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
+  const timer = setTimeout(() => {
+    controller.abort();
+  }, REQUEST_TIMEOUT);
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -30,127 +32,167 @@ async function request<T>(
   };
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers.Authorization = `Bearer ${token}`;
   }
 
   try {
-    //console.log('FETCH START:', url);
+    console.log('API REQUEST:', url);
 
-    const res = await fetch(url, {
+    const response = await fetch(url, {
       ...options,
       headers,
       signal: controller.signal,
     });
 
-    //console.log('FETCH RESPONSE:', res.status);
-
     clearTimeout(timer);
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err?.message || `HTTP ${res.status}`);
+    console.log('API RESPONSE:', response.status, url);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+
+      throw new Error(
+        errorData?.message || `HTTP ${response.status}`
+      );
     }
 
-    const result = await res.json();
-
-    //console.log('FETCH DATA:', result);
-
-    return result as T;
+    return (await response.json()) as T;
   } catch (error: unknown) {
     clearTimeout(timer);
 
-    //console.log('API ERROR:', error);
-
-    const isAbort =
-      error instanceof Error && error.name === 'AbortError';
-
-    if (retries > 0 && !isAbort) {
-      //console.log('RETRYING REQUEST...', retries);
-
-      await new Promise((r) => setTimeout(r, 1000));
-
-      return request<T>(url, options, retries - 1);
+    if (
+      error instanceof Error &&
+      error.name === 'AbortError'
+    ) {
+      throw new Error(
+        `Request timed out: ${url}`
+      );
     }
 
-    throw isAbort ? new Error('Request timed out') : error;
+    throw error;
   }
 }
 
 export const api = {
-  get: <T>(url: string) => request<T>(url),
+  get: <T>(url: string) =>
+    request<T>(url),
+
   post: <T>(url: string, body: unknown) =>
-    request<T>(url, { method: 'POST', body: JSON.stringify(body) }),
+    request<T>(url, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
 };
 
-// Auth
+// --------------------------------------------------
+// AUTH
+// --------------------------------------------------
+
 export async function registerUser(data: {
   username: string;
   email: string;
   password: string;
 }) {
-  //console.log('REGISTER CLICKED');
-  //console.log('REGISTER URL:', ENDPOINTS.REGISTER);
-  // console.log('REGISTER DATA:', {
-  //   username: data.username,
-  //   email: data.email,
-  // });
-
-  const result = await api.post(ENDPOINTS.REGISTER, data);
-
-  //console.log('REGISTER RESPONSE:', result);
-
-  return result;
+  return api.post(
+    ENDPOINTS.REGISTER,
+    data
+  );
 }
 
-export async function loginUser(data: { email: string; password: string }) {
-  return api.post<{ data: { accessToken: string; user: object } }>(
+export async function loginUser(data: {
+  email: string;
+  password: string;
+}) {
+  return api.post<{
+    data: {
+      accessToken: string;
+      refreshToken?: string;
+      user: object;
+    };
+  }>(
     ENDPOINTS.LOGIN,
     data
   );
 }
 
 export async function logoutUser() {
-  return api.post(ENDPOINTS.LOGOUT, {});
+  return api.post(
+    ENDPOINTS.LOGOUT,
+    {}
+  );
 }
 
 export async function getCurrentUser() {
-  return api.get(ENDPOINTS.CURRENT_USER);
+  return api.get(
+    ENDPOINTS.CURRENT_USER
+  );
 }
 
-// Courses & Instructors
-export async function fetchCourses(page = 1, limit = 20) {
-  return api.get(`${ENDPOINTS.COURSES}?page=${page}&limit=${limit}`);
+// --------------------------------------------------
+// COURSES & INSTRUCTORS
+// --------------------------------------------------
+
+export async function fetchCourses(
+  page = 1,
+  limit = 20
+) {
+  return api.get(
+    `${ENDPOINTS.COURSES}?page=${page}&limit=${limit}`
+  );
 }
 
-export async function fetchInstructors(limit = 20) {
-  return api.get(`${ENDPOINTS.INSTRUCTORS}?limit=${limit}`);
+export async function fetchInstructors(
+  limit = 20
+) {
+  return api.get(
+    `${ENDPOINTS.INSTRUCTORS}?limit=${limit}`
+  );
 }
 
+// --------------------------------------------------
+// TOKEN VERIFICATION
+// --------------------------------------------------
 
-
-export async function verifyAccessToken(token: string) {
-  const response = await fetch(`${BASE_URL}/users/current-user`, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+export async function verifyAccessToken(
+  token: string
+) {
+  const response = await fetch(
+    ENDPOINTS.CURRENT_USER,
+    {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
 
   return response.ok;
 }
 
-export async function refreshAccessToken(refreshToken: string) {
-  const response = await fetch(`${BASE_URL}/users/refresh-token`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${refreshToken}`,
-    },
-  });
+// --------------------------------------------------
+// REFRESH TOKEN
+// --------------------------------------------------
+
+export async function refreshAccessToken(
+  refreshToken: string
+) {
+  const response = await fetch(
+    ENDPOINTS.REFRESH_TOKEN,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${refreshToken}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
 
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data?.message || 'Refresh token expired');
+    throw new Error(
+      data?.message || 'Refresh token expired'
+    );
   }
 
   return data.data.accessToken;

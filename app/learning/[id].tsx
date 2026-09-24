@@ -1,366 +1,562 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  Pressable,
   ScrollView,
+  StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { Colors } from '../../constants/colors';
 import { useAuth } from '../../store/authStore';
-import { useCourses } from '../../store/courseStore';
 import {
-  getCourseLessons,
-  loadLearningProgress,
-  saveLearningProgress,
-  Lesson,
+  getCourseModules,
   LearningProgress,
+  loadLearningProgress,
 } from '../../store/learningStore';
 
 export default function LearningHubScreen() {
   const router = useRouter();
-  const { user } = useAuth();
-  const { enrolled, courses } = useCourses();
-
   const { id, title } = useLocalSearchParams<{
     id: string;
     title?: string;
   }>();
 
+  const { user } = useAuth();
+
   const courseId = String(id);
 
-  const course = courses.find(
-    (item) => String(item.id) === courseId
-  );
+  const [progress, setProgress] =
+    useState<LearningProgress | null>(null);
 
-  const courseTitle = title || course?.title || 'Course';
+  const [loading, setLoading] = useState(true);
 
-  const lessons = useMemo(
-    () => getCourseLessons(courseId),
-    [courseId]
-  );
+  const modules = getCourseModules(courseId);
 
-  const [progress, setProgress] = useState<LearningProgress>({
-    completedLessons: [],
-    currentLessonId: null,
-  });
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
 
-  const [isLoading, setIsLoading] = useState(true);
+      async function load() {
+        if (!user?._id) {
+          setLoading(false);
+          return;
+        }
 
-  const isEnrolled = enrolled.includes(courseId);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadProgress = async () => {
-      if (!user?._id || !courseId) {
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const saved = await loadLearningProgress(
-          user._id,
+        const data = await loadLearningProgress(
+          String(user._id),
           courseId
         );
 
-        if (!cancelled) {
-          setProgress(saved);
-        }
-      } catch (error) {
-        console.error(
-          'Failed to load learning progress:',
-          error
-        );
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
+        if (active) {
+          setProgress(data);
+          setLoading(false);
         }
       }
-    };
 
-    loadProgress();
+      load();
 
-    return () => {
-      cancelled = true;
-    };
-  }, [user?._id, courseId]);
+      return () => {
+        active = false;
+      };
+    }, [user?._id, courseId])
+  );
 
-  const completedCount = progress.completedLessons.length;
+  if (loading || !progress) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
-  const progressPercentage =
-    lessons.length === 0
+  const totalLessons = modules.reduce(
+    (total, module) => total + module.lessons.length,
+    0
+  );
+
+  const completedLessons =
+    progress.completedLessons.length;
+
+  const courseProgress =
+    totalLessons === 0
       ? 0
-      : Math.round((completedCount / lessons.length) * 100);
+      : Math.round(
+          (completedLessons / totalLessons) * 100
+        );
 
-  const markLessonComplete = async (lesson: Lesson) => {
-    if (!user?._id) return;
+  const isModuleUnlocked = (index: number) => {
+    if (index === 0) return true;
 
-    const alreadyCompleted =
-      progress.completedLessons.includes(lesson.id);
-
-    if (alreadyCompleted) {
-      return;
-    }
-
-    const nextProgress: LearningProgress = {
-      completedLessons: [
-        ...progress.completedLessons,
-        lesson.id,
-      ],
-      currentLessonId: lesson.id,
-    };
-
-    setProgress(nextProgress);
-
-    await saveLearningProgress(
-      user._id,
-      courseId,
-      nextProgress
+    return progress.passedModules.includes(
+      modules[index - 1].id
     );
   };
-
-  const openLesson = async (lesson: Lesson) => {
-    if (lesson.type === 'quiz') {
-      router.push({
-        pathname: '/learning/quiz',
-        params: {
-          courseId,
-          title: courseTitle,
-        },
-      });
-
-      return;
-    }
-
-    await markLessonComplete(lesson);
-  };
-
-  if (!isEnrolled) {
-    return (
-      <View className="flex-1 bg-background justify-center items-center px-6">
-        <Ionicons
-          name="lock-closed-outline"
-          size={52}
-          color={Colors.textSecondary}
-        />
-
-        <Text className="text-xl font-extrabold text-foreground mt-4 text-center">
-          Course Locked
-        </Text>
-
-        <Text className="text-sm text-muted text-center mt-2">
-          You need to enroll in this course before accessing the
-          Learning Hub.
-        </Text>
-
-        <TouchableOpacity
-          className="bg-primary rounded-xl px-6 py-3.5 mt-6"
-          onPress={() =>
-            router.replace({
-              pathname: '/course/[id]',
-              params: { id: courseId },
-            })
-          }
-        >
-          <Text className="text-white font-bold">
-            Go to Course
-          </Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <View className="flex-1 bg-background justify-center items-center">
-        <ActivityIndicator
-          size="large"
-          color={Colors.primary}
-        />
-
-        <Text className="text-muted mt-3">
-          Loading your progress...
-        </Text>
-      </View>
-    );
-  }
 
   return (
-    <ScrollView
-      className="flex-1 bg-background"
-      contentContainerClassName="pb-10"
-    >
-      <View className="p-4">
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Pressable
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
+          <Ionicons
+            name="arrow-back"
+            size={24}
+            color="#2563eb"
+          />
+        </Pressable>
 
-        {/* Header */}
-        <View className="mb-6">
-          <Text className="text-xs font-bold text-primary uppercase">
-            Learning Hub
-          </Text>
+        <Text style={styles.headerTitle}>
+          Learning Hub
+        </Text>
+      </View>
 
-          <Text className="text-2xl font-extrabold text-foreground mt-1">
-            {courseTitle}
-          </Text>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.eyebrow}>
+          LEARNING HUB
+        </Text>
 
-          <Text className="text-sm text-muted mt-2">
-            Continue learning from where you left off.
-          </Text>
-        </View>
+        <Text style={styles.courseTitle}>
+          {String(title || 'Course')}
+        </Text>
 
-        {/* Progress Card */}
-        <View className="bg-surface rounded-2xl border border-border p-5 mb-6">
-          <View className="flex-row justify-between items-center">
+        <Text style={styles.subtitle}>
+          Continue learning from where you left off.
+        </Text>
+
+        {/* COURSE PROGRESS */}
+
+        <View style={styles.progressCard}>
+          <View style={styles.progressHeader}>
             <View>
-              <Text className="text-sm font-bold text-foreground">
+              <Text style={styles.progressTitle}>
                 Course Progress
               </Text>
 
-              <Text className="text-xs text-muted mt-1">
-                {completedCount} of {lessons.length} lessons completed
+              <Text style={styles.progressText}>
+                {completedLessons} of {totalLessons}{' '}
+                lessons completed
               </Text>
             </View>
 
-            <Text className="text-2xl font-extrabold text-primary">
-              {progressPercentage}%
+            <Text style={styles.progressPercent}>
+              {courseProgress}%
             </Text>
           </View>
 
-          <View className="h-3 bg-border rounded-full overflow-hidden mt-4">
+          <View style={styles.progressTrack}>
             <View
-              className="h-full bg-primary rounded-full"
-              style={{
-                width: `${progressPercentage}%`,
-              }}
+              style={[
+                styles.progressFill,
+                {
+                  width: `${courseProgress}%`,
+                },
+              ]}
             />
           </View>
-
-          {progressPercentage === 100 && (
-            <View className="flex-row items-center mt-4">
-              <Ionicons
-                name="checkmark-circle"
-                size={20}
-                color={Colors.success}
-              />
-
-              <Text className="text-sm font-semibold text-success ml-2">
-                Course completed! 🎉
-              </Text>
-            </View>
-          )}
         </View>
 
-        {/* Lessons */}
-        <Text className="text-lg font-extrabold text-foreground mb-3">
-          Course Content
+        {/* MODULES */}
+
+        <Text style={styles.sectionTitle}>
+          Course Modules
         </Text>
 
-        {lessons.map((lesson, index) => {
-          const completed =
-            progress.completedLessons.includes(lesson.id);
+        {modules.map((module, index) => {
+          const unlocked = isModuleUnlocked(index);
+          const passed = progress.passedModules.includes(
+            module.id
+          );
 
-          const isCurrent =
-            progress.currentLessonId === lesson.id;
+          const moduleCompletedLessons =
+            module.lessons.filter((lesson) =>
+              progress.completedLessons.includes(
+                lesson.id
+              )
+            ).length;
+
+          const moduleProgress = Math.round(
+            (moduleCompletedLessons /
+              module.lessons.length) *
+              100
+          );
 
           return (
-            <TouchableOpacity
-              key={lesson.id}
-              onPress={() => openLesson(lesson)}
-              className={`bg-surface rounded-xl border p-4 mb-3 ${
-                completed
-                  ? 'border-success'
-                  : isCurrent
-                    ? 'border-primary'
-                    : 'border-border'
-              }`}
+            <Pressable
+              key={module.id}
+              disabled={!unlocked}
+              onPress={() =>
+                router.push({
+                  pathname:
+                    '/learning/module/[moduleId]',
+                  params: {
+                    moduleId: module.id,
+                    courseId,
+                    title: String(title || 'Course'),
+                  },
+                })
+              }
+              style={({ pressed }) => [
+                styles.moduleCard,
+                !unlocked && styles.lockedCard,
+                pressed &&
+                  unlocked &&
+                  styles.pressedCard,
+              ]}
             >
-              <View className="flex-row items-center">
+              <View
+                style={[
+                  styles.moduleIcon,
+                  !unlocked &&
+                    styles.lockedModuleIcon,
+                  passed &&
+                    styles.completedModuleIcon,
+                ]}
+              >
+                <Ionicons
+                  name={
+                    passed
+                      ? 'checkmark'
+                      : unlocked
+                      ? 'book-outline'
+                      : 'lock-closed'
+                  }
+                  size={25}
+                  color={
+                    passed
+                      ? '#16a34a'
+                      : unlocked
+                      ? '#2563eb'
+                      : '#64748b'
+                  }
+                />
+              </View>
 
-                <View
-                  className={`w-11 h-11 rounded-full items-center justify-center ${
-                    completed
-                      ? 'bg-success'
-                      : 'bg-primary-light'
-                  }`}
-                >
-                  <Ionicons
-                    name={
-                      completed
-                        ? 'checkmark'
-                        : lesson.type === 'video'
-                          ? 'play'
-                          : lesson.type === 'reading'
-                            ? 'book-outline'
-                            : 'help-circle-outline'
-                    }
-                    size={21}
-                    color={
-                      completed
-                        ? '#FFFFFF'
-                        : Colors.primary
-                    }
-                  />
-                </View>
-
-                <View className="flex-1 ml-3">
-                  <Text className="text-xs text-muted">
-                    LESSON {index + 1}
+              <View style={styles.moduleInfo}>
+                <View style={styles.moduleTopRow}>
+                  <Text style={styles.moduleNumber}>
+                    MODULE {index + 1}
                   </Text>
 
-                  <Text className="text-base font-bold text-foreground mt-0.5">
-                    {lesson.title}
-                  </Text>
-
-                  <Text
-                    className="text-xs text-muted mt-1"
-                    numberOfLines={2}
-                  >
-                    {lesson.description}
-                  </Text>
-
-                  {lesson.duration && (
-                    <Text className="text-xs text-muted mt-2">
-                      {lesson.duration}
+                  {passed && (
+                    <Text style={styles.passedText}>
+                      PASSED
                     </Text>
                   )}
                 </View>
 
-                <Ionicons
-                  name="chevron-forward"
-                  size={20}
-                  color={Colors.textSecondary}
-                />
+                <Text style={styles.moduleTitle}>
+                  {module.title}
+                </Text>
+
+                <Text style={styles.moduleDescription}>
+                  {module.description}
+                </Text>
+
+                <View style={styles.moduleProgressRow}>
+                  <Text style={styles.lessonCount}>
+                    {moduleCompletedLessons}/5 lessons
+                  </Text>
+
+                  <Text style={styles.modulePercent}>
+                    {moduleProgress}%
+                  </Text>
+                </View>
+
+                <View style={styles.moduleProgressTrack}>
+                  <View
+                    style={[
+                      styles.moduleProgressFill,
+                      {
+                        width: `${moduleProgress}%`,
+                      },
+                    ]}
+                  />
+                </View>
               </View>
-            </TouchableOpacity>
+
+              <Ionicons
+                name={
+                  unlocked
+                    ? 'chevron-forward'
+                    : 'lock-closed'
+                }
+                size={22}
+                color={
+                  unlocked
+                    ? '#64748b'
+                    : '#94a3b8'
+                }
+              />
+            </Pressable>
           );
         })}
 
-        {/* Resume */}
-        {progress.currentLessonId && (
-          <View className="bg-primary-light rounded-xl p-4 mt-2">
-            <View className="flex-row items-center">
-              <Ionicons
-                name="play-circle"
-                size={24}
-                color={Colors.primary}
-              />
+        {progress.courseCompleted && (
+          <View style={styles.completedCard}>
+            <Ionicons
+              name="trophy"
+              size={36}
+              color="#f59e0b"
+            />
 
-              <View className="flex-1 ml-3">
-                <Text className="text-sm font-bold text-primary">
-                  Keep learning
-                </Text>
+            <Text style={styles.completedTitle}>
+              Course Completed 🎉
+            </Text>
 
-                <Text className="text-xs text-muted mt-1">
-                  Your progress is saved automatically.
-                </Text>
-              </View>
-            </View>
+            <Text style={styles.completedText}>
+              You successfully completed all 5
+              modules and passed every quiz.
+            </Text>
           </View>
         )}
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f8fafc',
+  },
+
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  header: {
+    height: 72,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+
+  backButton: {
+    marginRight: 14,
+  },
+
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1e3a8a',
+  },
+
+  content: {
+    padding: 22,
+    paddingBottom: 50,
+  },
+
+  eyebrow: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#2563eb',
+    marginBottom: 8,
+  },
+
+  courseTitle: {
+    fontSize: 30,
+    fontWeight: '800',
+    color: '#172554',
+  },
+
+  subtitle: {
+    marginTop: 8,
+    fontSize: 16,
+    color: '#64748b',
+    marginBottom: 24,
+  },
+
+  progressCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 18,
+    padding: 22,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginBottom: 30,
+  },
+
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  progressTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#172554',
+  },
+
+  progressText: {
+    marginTop: 6,
+    color: '#64748b',
+    fontSize: 14,
+  },
+
+  progressPercent: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#2563eb',
+  },
+
+  progressTrack: {
+    height: 10,
+    borderRadius: 10,
+    backgroundColor: '#e2e8f0',
+    marginTop: 18,
+    overflow: 'hidden',
+  },
+
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#2563eb',
+    borderRadius: 10,
+  },
+
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#172554',
+    marginBottom: 14,
+  },
+
+  moduleCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 18,
+    padding: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#dbeafe',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  lockedCard: {
+    opacity: 0.55,
+    borderColor: '#e2e8f0',
+  },
+
+  pressedCard: {
+    transform: [{ scale: 0.99 }],
+  },
+
+  moduleIcon: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#eff6ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+
+  lockedModuleIcon: {
+    backgroundColor: '#f1f5f9',
+  },
+
+  completedModuleIcon: {
+    backgroundColor: '#dcfce7',
+  },
+
+  moduleInfo: {
+    flex: 1,
+  },
+
+  moduleTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 5,
+  },
+
+  moduleNumber: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#2563eb',
+  },
+
+  passedText: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#16a34a',
+  },
+
+  moduleTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#172554',
+  },
+
+  moduleDescription: {
+    marginTop: 5,
+    color: '#64748b',
+    lineHeight: 20,
+  },
+
+  moduleProgressRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 14,
+  },
+
+  lessonCount: {
+    fontSize: 13,
+    color: '#64748b',
+    fontWeight: '600',
+  },
+
+  modulePercent: {
+    fontSize: 13,
+    color: '#2563eb',
+    fontWeight: '800',
+  },
+
+  moduleProgressTrack: {
+    height: 7,
+    backgroundColor: '#e2e8f0',
+    borderRadius: 10,
+    marginTop: 7,
+    overflow: 'hidden',
+  },
+
+  moduleProgressFill: {
+    height: '100%',
+    backgroundColor: '#2563eb',
+    borderRadius: 10,
+  },
+
+  completedCard: {
+    marginTop: 15,
+    padding: 25,
+    borderRadius: 18,
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    alignItems: 'center',
+  },
+
+  completedTitle: {
+    marginTop: 10,
+    fontSize: 21,
+    fontWeight: '800',
+    color: '#92400e',
+  },
+
+  completedText: {
+    marginTop: 8,
+    textAlign: 'center',
+    color: '#78350f',
+    lineHeight: 21,
+  },
+});
