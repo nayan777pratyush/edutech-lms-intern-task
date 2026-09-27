@@ -91,6 +91,46 @@ progression, progress tracking, and an AI-powered quiz system.
 Testing was performed on Android using Expo Go during development and
 the standalone EAS Preview APK for final verification.
 
+## 📱 Application Screenshots
+
+The following screenshots demonstrate the main application flows and features tested on a physical Android device.
+
+### 🔐 Authentication
+
+| Login |
+|---|
+| ![Login](screenshots/login%20page.jpeg) |
+
+### 📚 Course & Learning Flow
+
+| Course Page | Course Modules |
+|---|---|
+| ![Course Page](screenshots/course%20page.jpeg) | ![Course Modules](screenshots/course%20modules.jpeg) |
+
+| Start Learning | Lessons |
+|---|---|
+| ![Start Learning](screenshots/start%20learning.jpeg) | ![Lessons](screenshots/lessons.jpeg) |
+
+| Lesson Completed |
+|---|
+| ![Lesson Completed](screenshots/lesson%20completed.jpeg) |
+
+### 💳 Enrollment & Payment
+
+| Enrollment | Payment |
+|---|---|
+| ![Enrollment](screenshots/enrollment.jpeg) | ![Payment](screenshots/payment.jpeg) |
+
+| Successful Payment |
+|---|
+| ![Successful Payment](screenshots/successful%20payment.jpeg) |
+
+### 👤 User Profile
+
+| Profile |
+|---|
+| ![Profile](screenshots/profile.jpeg) |
+
 ### Authentication
 
 -   Registration with valid details
