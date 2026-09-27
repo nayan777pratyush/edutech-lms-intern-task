@@ -41,8 +41,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "cea55c86-21a6-4ad0-8cdb-8830e4e25b6c"
+        "projectId": "f338f0ea-783d-49b9-bde7-8e9985ab4ca9"
       }
-    }
+    },
+    "owner": "thggg"
   }
 }
