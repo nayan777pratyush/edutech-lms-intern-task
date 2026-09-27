@@ -3,6 +3,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -238,7 +239,12 @@ export default function LearningHubScreen() {
                 />
               </View>
 
-              <View style={styles.moduleInfo}>
+<View
+  style={[
+    styles.moduleInfo,
+    Platform.OS !== 'web' && styles.mobileModuleInfo,
+  ]}
+>
                 <View style={styles.moduleTopRow}>
                   <Text style={styles.moduleNumber}>
                     MODULE {index + 1}
@@ -281,19 +287,37 @@ export default function LearningHubScreen() {
                 </View>
               </View>
 
-              <Ionicons
-                name={
-                  unlocked
-                    ? 'chevron-forward'
-                    : 'lock-closed'
-                }
-                size={22}
-                color={
-                  unlocked
-                    ? '#64748b'
-                    : '#94a3b8'
-                }
-              />
+{Platform.OS === 'web' ? (
+  <Ionicons
+    name={
+      unlocked
+        ? 'chevron-forward'
+        : 'lock-closed'
+    }
+    size={22}
+    color={
+      unlocked
+        ? '#64748b'
+        : '#94a3b8'
+    }
+  />
+) : (
+  <View style={styles.mobileCardAction}>
+    <Ionicons
+      name={
+        unlocked
+          ? 'chevron-forward'
+          : 'lock-closed'
+      }
+      size={22}
+      color={
+        unlocked
+          ? '#64748b'
+          : '#94a3b8'
+      }
+    />
+  </View>
+)}
             </Pressable>
           );
         })}
@@ -452,15 +476,16 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.99 }],
   },
 
-  moduleIcon: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: '#eff6ff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
-  },
+moduleIcon: {
+  width: 48,
+  height: 48,
+  borderRadius: 24,
+  backgroundColor: '#eff6ff',
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginRight: 12,
+  flexShrink: 0,
+},
 
   lockedModuleIcon: {
     backgroundColor: '#f1f5f9',
@@ -470,9 +495,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#dcfce7',
   },
 
-  moduleInfo: {
-    flex: 1,
-  },
+moduleInfo: {
+  flex: 1,
+},
+
+mobileModuleInfo: {
+  minWidth: 0,
+  flexShrink: 1,
+},
+
+mobileCardAction: {
+  width: 32,
+  minWidth: 32,
+  height: 40,
+  marginLeft: 8,
+  alignItems: 'center',
+  justifyContent: 'center',
+  flexShrink: 0,
+},
 
   moduleTopRow: {
     flexDirection: 'row',

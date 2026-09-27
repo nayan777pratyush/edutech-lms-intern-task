@@ -7,6 +7,7 @@ import {
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -287,37 +288,60 @@ export default function ModuleScreen() {
                 />
               </View>
 
-              <View style={styles.lessonInfo}>
-                <Text style={styles.lessonNumber}>
-                  LESSON {index + 1}
-                </Text>
+<View
+  style={[
+    styles.lessonInfo,
+    Platform.OS !== 'web' && styles.mobileLessonInfo,
+  ]}
+>
+  <Text style={styles.lessonNumber}>
+    LESSON {index + 1}
+  </Text>
 
-                <Text style={styles.lessonTitle}>
-                  {lesson.title}
-                </Text>
+  <Text style={styles.lessonTitle}>
+    {lesson.title}
+  </Text>
 
-                <Text style={styles.lessonDescription}>
-                  {lesson.description}
-                </Text>
+  <Text style={styles.lessonDescription}>
+    {lesson.description}
+  </Text>
 
-                <Text style={styles.duration}>
-                  {lesson.duration}
-                </Text>
-              </View>
+  <Text style={styles.duration}>
+    {lesson.duration}
+  </Text>
+</View>
 
-              <Ionicons
-                name={
-                  unlocked
-                    ? 'chevron-forward'
-                    : 'lock-closed'
-                }
-                size={21}
-                color={
-                  unlocked
-                    ? '#64748b'
-                    : '#94a3b8'
-                }
-              />
+{Platform.OS === 'web' ? (
+  <Ionicons
+    name={
+      unlocked
+        ? 'chevron-forward'
+        : 'lock-closed'
+    }
+    size={21}
+    color={
+      unlocked
+        ? '#64748b'
+        : '#94a3b8'
+    }
+  />
+) : (
+  <View style={styles.mobileCardAction}>
+    <Ionicons
+      name={
+        unlocked
+          ? 'chevron-forward'
+          : 'lock-closed'
+      }
+      size={22}
+      color={
+        unlocked
+          ? '#64748b'
+          : '#94a3b8'
+      }
+    />
+  </View>
+)}
             </Pressable>
           );
         })}
@@ -400,15 +424,29 @@ export default function ModuleScreen() {
             </Text>
           </View>
 
-          <Ionicons
-            name={
-              quizUnlocked
-                ? 'chevron-forward'
-                : 'lock-closed'
-            }
-            size={22}
-            color="#64748b"
-          />
+{Platform.OS === 'web' ? (
+  <Ionicons
+    name={
+      quizUnlocked
+        ? 'chevron-forward'
+        : 'lock-closed'
+    }
+    size={22}
+    color="#64748b"
+  />
+) : (
+  <View style={styles.mobileCardAction}>
+    <Ionicons
+      name={
+        quizUnlocked
+          ? 'chevron-forward'
+          : 'lock-closed'
+      }
+      size={22}
+      color="#64748b"
+    />
+  </View>
+)}
         </Pressable>
       </ScrollView>
     </View>
@@ -526,16 +564,16 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
 
-  lessonCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#dbeafe',
-    padding: 18,
-    marginBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
+lessonCard: {
+  backgroundColor: '#fff',
+  borderRadius: 16,
+  borderWidth: 1,
+  borderColor: '#dbeafe',
+  padding: 16,
+  marginBottom: 12,
+  flexDirection: 'row',
+  alignItems: 'center',
+},
 
   lockedCard: {
     opacity: 0.5,
@@ -546,15 +584,16 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.99 }],
   },
 
-  lessonIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#eff6ff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 15,
-  },
+lessonIcon: {
+  width: 48,
+  height: 48,
+  borderRadius: 24,
+  backgroundColor: '#eff6ff',
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginRight: 12,
+  flexShrink: 0,
+},
 
   completedIcon: {
     backgroundColor: '#dcfce7',
@@ -564,9 +603,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#f1f5f9',
   },
 
-  lessonInfo: {
-    flex: 1,
-  },
+lessonInfo: {
+  flex: 1,
+},
+
+mobileLessonInfo: {
+  minWidth: 0,
+  flexShrink: 1,
+},
+mobileCardAction: {
+  width: 32,
+  minWidth: 32,
+  height: 40,
+  marginLeft: 8,
+  alignItems: 'center',
+  justifyContent: 'center',
+  flexShrink: 0,
+},
 
   lessonNumber: {
     fontSize: 10,

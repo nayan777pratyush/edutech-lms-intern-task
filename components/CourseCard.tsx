@@ -35,33 +35,37 @@ function CourseCard({ course }: Props) {
       activeOpacity={0.85}
     >
       <Image
-        source={{ uri: getCourseThumbnail() }}
+        source={{ uri: thumbnail }}
         className="w-full h-40 bg-border"
         contentFit="cover"
         transition={200}
       />
       <View className="p-3">
-        <View className="flex-row items-center mb-1.5">
+        <View className="flex-row items-center mb-2">
           <Image
             source={{ uri: course.instructorAvatar }}
-            className="w-6 h-6 rounded-full mr-1.5 bg-border"
+            className="w-7 h-7 rounded-full mr-2 bg-border"
             contentFit="cover"
           />
           <Text className="text-xs text-primary font-semibold flex-1" numberOfLines={1}>
             {course.instructorName ?? 'Unknown'}
           </Text>
         </View>
-        <Text className="text-[15px] font-bold text-foreground mb-1" numberOfLines={2}>
+        <Text className="text-[16px] font-bold text-foreground mb-1" numberOfLines={2}>
           {course.title}
         </Text>
-        <Text className="text-[13px] text-muted leading-[18px] mb-2" numberOfLines={2}>
+        <Text className="text-[13px] text-muted leading-[18px] mb-3" numberOfLines={2}>
           {course.description}
         </Text>
         <View className="flex-row justify-between items-center">
-          <Text className="text-[15px] font-bold text-secondary">
+          <Text className="text-[16px] font-bold text-secondary">
             ${course.price.toFixed(2)}
           </Text>
-          <Pressable onPress={() => toggleBookmark(String(course.id))} hitSlop={8}>
+          <Pressable 
+            onPress={() => toggleBookmark(String(course.id))} 
+            hitSlop={10}
+            className="w-10 h-10 rounded-full bg-primary-light items-center justify-center"
+          >
             <Ionicons
               name={isBookmarked ? 'bookmark' : 'bookmark-outline'}
               size={22}
