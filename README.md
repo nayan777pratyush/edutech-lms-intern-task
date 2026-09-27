@@ -97,39 +97,33 @@ The following screenshots demonstrate the main application flows and features te
 
 ### 🔐 Authentication
 
-| Login |
-|---|
-| ![Login](screenshots/login%20page.jpeg) |
+<p align="center">
+  <img src="screenshots/login%20page.jpeg" width="180" alt="Login" />
+</p>
 
 ### 📚 Course & Learning Flow
 
-| Course Page | Course Modules |
-|---|---|
-| ![Course Page](screenshots/course%20page.jpeg) | ![Course Modules](screenshots/course%20modules.jpeg) |
-
-| Start Learning | Lessons |
-|---|---|
-| ![Start Learning](screenshots/start%20learning.jpeg) | ![Lessons](screenshots/lessons.jpeg) |
-
-| Lesson Completed |
-|---|
-| ![Lesson Completed](screenshots/lesson%20completed.jpeg) |
+<p align="center">
+  <img src="screenshots/course%20page.jpeg" width="180" alt="Course Page" />
+  <img src="screenshots/course%20modules.jpeg" width="180" alt="Course Modules" />
+  <img src="screenshots/start%20learning.jpeg" width="180" alt="Start Learning" />
+  <img src="screenshots/lessons.jpeg" width="180" alt="Lessons" />
+  <img src="screenshots/lesson%20completed.jpeg" width="180" alt="Lesson Completed" />
+</p>
 
 ### 💳 Enrollment & Payment
 
-| Enrollment | Payment |
-|---|---|
-| ![Enrollment](screenshots/enrollment.jpeg) | ![Payment](screenshots/payment.jpeg) |
-
-| Successful Payment |
-|---|
-| ![Successful Payment](screenshots/successful%20payment.jpeg) |
+<p align="center">
+  <img src="screenshots/enrollment.jpeg" width="180" alt="Enrollment" />
+  <img src="screenshots/payment.jpeg" width="180" alt="Payment" />
+  <img src="screenshots/successful%20payment.jpeg" width="180" alt="Successful Payment" />
+</p>
 
 ### 👤 User Profile
 
-| Profile |
-|---|
-| ![Profile](screenshots/profile.jpeg) |
+<p align="center">
+  <img src="screenshots/profile.jpeg" width="180" alt="Profile" />
+</p>
 
 ### Authentication
 
